@@ -6,6 +6,7 @@ Created on Tue May 28 16:18:05 2024
 @author: elocan
 """
 
+import sys
 from rapidfuzz import fuzz
 import pandas as pd
 import csv
