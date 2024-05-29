@@ -28,8 +28,11 @@ csrp_csv_file="/N/u/gklinge/Quartz/Matching/crsp_file.csv"
 output_folder="/N/u/gklinge/Quartz/Matching/Output/matched_output"
 results_folder="/N/u/gklinge/Quartz/Matching/Output/results"
 
-# Change to the directory from which the job was submitted
-cd $SLURM_SUBMIT_DIR
+# Change to the directory containing the Python script
+cd /N/u/gklinge/Quartz/Matching
 
 # Run the Python script with srun
 srun python Matcher.py "$csrp_csv_file" "$assignee_csv_file" "$output_folder" "$results_folder"
+
+# Deactivate the virtual environment
+deactivate
