@@ -65,10 +65,10 @@ def match_and_fuzzy_match_rows(csrp_data, assignee_data):
     print(f"Matching completed in {time.time() - start_time:.2f} seconds.")
     return matched_data
 
-csrp_csv_file = '/Users/elocan/Downloads/crsp_file.csv'
-assignee_csv_file = '/Users/elocan/Downloads/assignees_unique_clean.csv'
-output_folder = '/Users/elocan/Downloads/matched_output'
-results_folder = '/Users/elocan/Downloads/results'
+csrp_csv_file = sys.argv[1]
+assignee_csv_file = sys.argv[2]
+output_folder = sys.argv[3]
+results_folder = sys.argv[4]
 
 # Create the output folders if they don't exist
 os.makedirs(output_folder, exist_ok=True)
