@@ -32,4 +32,4 @@ results_folder="/N/u/gklinge/Quartz/Matching/Output/results"
 cd $SLURM_SUBMIT_DIR
 
 # Run the Python script with srun
-srun python YourMatchingScript.py "$csrp_csv_file" "$assignee_csv_file" "$output_folder" "$results_folder"
+srun python Matcher.py "$csrp_csv_file" "$assignee_csv_file" "$output_folder" "$results_folder"
