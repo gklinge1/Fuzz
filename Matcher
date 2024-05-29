@@ -1,1 +1,125 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue May 28 16:18:05 2024
 
+@author: elocan
+"""
+
+from rapidfuzz import fuzz
+import pandas as pd
+import csv
+import time
+import os
+
+def read_csv(file_path):
+    """Read a CSV file and return the data as a list of dictionaries."""
+    with open(file_path, mode='r', newline='', encoding='utf-8') as file:
+        return list(csv.DictReader(file))
+
+def write_csv(file_path, fieldnames, data):
+    """Write data to a CSV file."""
+    with open(file_path, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
+        for data_row in data:
+            # Map data_row keys to the correct case as needed
+            row_to_write = {fieldname: data_row.get(fieldname) for fieldname in fieldnames}
+            writer.writerow(row_to_write)
+
+def match_and_fuzzy_match_rows(csrp_data, assignee_data):
+    matched_data = []
+    total = len(assignee_data)
+    processed = 0
+    start_time = time.time()
+
+    for _, assignee_row in assignee_data.iterrows():
+        processed += 1
+        csrp_year_data = csrp_data[csrp_data['year'] == assignee_row['year']]
+
+        exact_matches = csrp_year_data[csrp_year_data['company_name'] == assignee_row['assignee']]
+
+        for _, csrp_row in exact_matches.iterrows():
+            if csrp_row['company_name'][0].lower() == assignee_row['assignee'][0].lower():
+                matched_row = {**csrp_row, **assignee_row, 'Score': 100}
+                matched_data.append(matched_row)
+
+        if not exact_matches.empty:
+            continue
+
+        fuzzy_matches = []
+        for _, csrp_row in csrp_year_data.iterrows():
+            if csrp_row['company_name'][0].lower() == assignee_row['assignee'][0].lower():
+                fuzz_score = fuzz.ratio(csrp_row['company_name'].lower(), assignee_row['assignee'].lower())
+                if fuzz_score > 74:
+                    matched_row = {**csrp_row, **assignee_row, 'Score': fuzz_score}
+                    fuzzy_matches.append(matched_row)
+                    if len(fuzzy_matches) == 5:
+                        break
+
+        matched_data.extend(fuzzy_matches)
+
+        if processed % 10 == 0 or processed == total:
+            print(f"Processed {processed}/{total} entries ({(processed/total)*100:.2f}%)")
+
+    print(f"Matching completed in {time.time() - start_time:.2f} seconds.")
+    return matched_data
+
+csrp_csv_file = '/Users/elocan/Downloads/crsp_file.csv'
+assignee_csv_file = '/Users/elocan/Downloads/assignees_unique_clean.csv'
+output_folder = '/Users/elocan/Downloads/matched_output'
+results_folder = '/Users/elocan/Downloads/results'
+
+# Create the output folders if they don't exist
+os.makedirs(output_folder, exist_ok=True)
+os.makedirs(results_folder, exist_ok=True)
+
+# Loop through the years
+for year in range(1926, 1927):
+    df = pd.read_csv(assignee_csv_file, delimiter='\t')
+    df = df.rename(columns={'assignee_clean': 'assignee'})
+    assignee_data = df[df['year'] == year]
+    matched_rows = match_and_fuzzy_match_rows(pd.read_csv(csrp_csv_file), assignee_data)
+
+    output_matched_csv = os.path.join(output_folder, f'matched_output_{year}.csv')
+    output_fieldnames = ['company_name', 'year', 'assignee', 'Score']
+    write_csv(output_matched_csv, output_fieldnames, matched_rows)
+    print(f"Total matches found for {year}: {len(matched_rows)}")
+
+    # Now merge the generated files for this year
+    merged_df = pd.DataFrame(columns=['assignee'])
+
+    for file in os.listdir(output_folder):
+        if file.startswith(f'matched_output_{year}') and file.endswith(".csv"):
+            file_path = os.path.join(output_folder, file)
+            df = pd.read_csv(file_path)
+            merged_df = merged_df.append(df, ignore_index=True)
+
+    # Empty DataFrame to store the results
+    results_df = pd.DataFrame(columns=['assignee'])
+
+    # Get unique assignees
+    unique_assignees = merged_df['assignee'].unique()
+
+    # Iterate over each unique assignee
+    for assignee in unique_assignees:
+        # Filter rows for the current assignee
+        assignee_rows = merged_df[merged_df['assignee'] == assignee]
+
+        # Get company names and scores for the assignee
+        companies = assignee_rows['company_name'].tolist()
+        scores = assignee_rows['Score'].tolist()
+
+        # Create a dictionary with the data
+        data_dict = {'assignee': assignee}
+        for i, company in enumerate(companies):
+            data_dict[f'{i+1}st match'] = company
+        for i, score in enumerate(scores):
+            data_dict[f'{i+1}st score'] = score
+
+        # Append the data to the results DataFrame
+        results_df = results_df.append(data_dict, ignore_index=True)
+
+    results_csv_path = os.path.join(results_folder, f'results_{year}.csv')
+    results_df.to_csv(results_csv_path, index=False)
+    print(f"Results saved for {year} in {results_csv_path}")
