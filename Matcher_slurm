@@ -13,18 +13,23 @@
 #SBATCH -A r00638
 #SBATCH --array=1
 
-module load python
+module load python  # Load Python module, adjust the module name/version if necessary
 
+# Create and activate a virtual environment
 python -m venv ~/myenv
 source ~/myenv/bin/activate
 
+# Install necessary Python packages in the virtual environment
 pip install pandas rapidfuzz
 
+# Define file paths and directories
 assignee_csv_file="/N/u/gklinge/Quartz/Matching/assignees_unique_clean.csv"
 csrp_csv_file="/N/u/gklinge/Quartz/Matching/crsp_file.csv"
-output_folder="/N/u/gklinge/Quartz/Output/matched_output"
-results_folder="/N/u/gklinge/Quartz/Output/results"
+output_folder="/N/u/gklinge/Quartz/Matching/Output/matched_output"
+results_folder="/N/u/gklinge/Quartz/Matching/Output/results"
 
+# Change to the directory from which the job was submitted
 cd $SLURM_SUBMIT_DIR
 
+# Run the Python script with srun
 srun python YourMatchingScript.py "$csrp_csv_file" "$assignee_csv_file" "$output_folder" "$results_folder"
