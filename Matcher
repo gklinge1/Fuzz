@@ -76,7 +76,7 @@ os.makedirs(output_folder, exist_ok=True)
 os.makedirs(results_folder, exist_ok=True)
 
 # Loop through the years
-for year in range(2001, 2003):
+for year in range(1926, 2006):
     df = pd.read_csv(assignee_csv_file, delimiter='\t')
     df = df.rename(columns={'assignee_clean': 'assignee'})
     assignee_data = df[df['year'] == year]
